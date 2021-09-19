@@ -35,3 +35,9 @@ lerna-debug.log*
 !.vscode/extensions.json
 
 yarn.lock
+
+#env
+.env
+.env.**
+src/config/configuration.ts
+ormconfig.js

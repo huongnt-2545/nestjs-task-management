@@ -4,16 +4,19 @@ import {
   Delete,
   Get,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
   Query,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
+import { filter } from 'rxjs';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { GetTasksFilterDto } from './dto/get-tasks-filter.dto';
 import { TaskStatusValidationPipe } from './pipes/task-status-validation.pipe';
-import { Task, TaskStatus } from './tasks.model';
+import { TaskStatus } from './task-status.enum';
+import { Task } from './task.entity';
 import { TasksService } from './tasks.service';
 
 @Controller('tasks')
@@ -21,48 +24,42 @@ export class TasksController {
   constructor(private tasksService: TasksService) {}
 
   @Get()
-  getTasks(@Query(ValidationPipe) filterTaskDto: GetTasksFilterDto): Task[] {
-    if (Object.keys(filterTaskDto).length) {
-      return this.tasksService.getTasksWithFilter(filterTaskDto);
-    }
-
-    return this.tasksService.getAllTasks();
+  getTasks(
+    @Query(ValidationPipe) filterTaskDto: GetTasksFilterDto,
+  ): Promise<Task[]> {
+    return this.tasksService.getTasks(filterTaskDto);
   }
 
   @Get('/:id')
-  getTaskById(@Param('id') id: string): Task {
+  getTaskById(@Param('id', ParseIntPipe) id: number): Promise<Task> {
     return this.tasksService.getTaskById(id);
   }
 
-  //Define parameter implicit
+  // //Define parameter implicit
   @Post()
   @UsePipes(ValidationPipe)
-  createTask(@Body() createTaskDto: CreateTaskDto): Task {
+  createTask(@Body() createTaskDto: CreateTaskDto): Promise<Task> {
     return this.tasksService.createTask(createTaskDto);
   }
 
   @Delete('/:id')
-  deleteTaskById(@Param('id') id: string): string {
-    const taskDeleted = this.tasksService.deleteTaskById(id);
-
-    if (!taskDeleted) {
-      return 'Somgthing went wrong when delete task!';
-    }
-
-    return `Task ${id} was deleted!`;
+  deleteTaskById(@Param('id', ParseIntPipe) id: number): Promise<void> {
+    return this.tasksService.deleteTaskById(id);
   }
 
   @Patch('/:id/status')
   updateTaskStatus(
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: number,
     @Body('status', TaskStatusValidationPipe) taskStatus: TaskStatus,
-  ): Task {
+  ): Promise<Task> {
     return this.tasksService.updateTaskStatus(id, taskStatus);
   }
 
-  //Define parameter explicit
-  //   @Post()
-  //   createTask(@Body() data): Task {
-  //     return this.tasksService.createTask(data['title'], data['description']);
-  //   }
+  @Patch('/:id')
+  updateTaskInfo(
+    @Param('id', ParseIntPipe) id: number,
+    @Body('title') createTaskDto: CreateTaskDto,
+  ): Promise<Task> {
+    return this.tasksService.updateTaskInfo(id, createTaskDto);
+  }
 }
